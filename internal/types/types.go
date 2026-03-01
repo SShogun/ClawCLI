@@ -12,6 +12,11 @@ type ChatRequest struct {
 	Temperature float64   `json:"temperature,omitempty"`
 	Stream      bool      `json:"stream,omitempty"`
 }
+type ChatResponse struct {
+	Content []struct {
+		Text string `json:"text"`
+	} `json:"content"`
+}
 
 // Content represents content blocks in the response
 type Content struct {

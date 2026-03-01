@@ -2,11 +2,9 @@ package config
 
 import (
 	"fmt"
-	"go/types"
 	"os"
 
 	"github.com/SShogun/ClawCLI/internal/types"
-
 	"github.com/spf13/viper"
 )
 
