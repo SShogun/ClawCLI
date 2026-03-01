@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"honnef.co/go/tools/config"
 )
 
 var askCmd = &cobra.Command{
@@ -17,8 +16,8 @@ var askCmd = &cobra.Command{
 No conversation history is maintained.
 
 Examples:
-  ai-cli ask "What is a goroutine?"
-  ai-cli ask "How to reverse a string in Go?"`,
+  claw-cli ask "What is a goroutine?"
+  claw-cli ask "How to reverse a string in Go?"`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runAsk,
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
-	"honnef.co/go/tools/config"
 )
 
 var (
@@ -108,7 +107,7 @@ func printWelcome() {
 		Padding(1, 2)
 
 	welcome := border.Render(
-		"🤖 AI CLI Assistant\n\n" +
+		"🤖 CLAW CLI Assistant\n\n" +
 			"Type your message to chat with the AI.\n" +
 			"Commands: exit | clear | history",
 	)
