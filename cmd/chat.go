@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/SShogun/ClawCLI/internal/config"
+	"github.com/SShogun/ClawCLI/internal/types"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
