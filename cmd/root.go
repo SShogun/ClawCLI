@@ -18,17 +18,16 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "clawcli",
 	Short: "An AI-Powered CLI Assistant",
-	Long: `AI CLI Assistant is a command-line tool that provides
+	Long: `CLAW CLI is a command-line tool that provides
 AI-powered code assistance, explanations, and chat capabilities
 powered by Claude AI.
 
 Usage examples:
-  ai-cli chat                    Start interactive chat
-  ai-cli ask "explain pointers"  Ask a one-shot question
-  ai-cli explain main.go         Explain a file
-  ai-cli review main.go          Review code in a file
-  ai-cli config set api-key KEY  Set your API key
-  ai-cli version                 Show version info`,
+  clawcli chat                    Start interactive chat
+  clawcli ask "explain pointers"  Ask a one-shot question
+  clawcli explain main.go         Explain a file
+  clawcli review main.go          Review code in a file
+  clawcli version                 Show version info`,
 }
 
 func Execute() {
@@ -42,9 +41,9 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.claw-cli.yaml)")
-	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "Claude API key (can also be set via config file or CLAW_CLI_API_KEY env variable)")
+	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "Claude API key (can also be set via .env or CLAW_API_KEY)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
-	rootCmd.PersistentFlags().StringVar(&model, "model", "claude-2", "Claude model to use (e.g., claude-2, claude-instant-100k)")
+	rootCmd.PersistentFlags().StringVar(&model, "model", "", "Claude model to use")
 
 	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
@@ -62,11 +61,12 @@ func initConfig() {
 		}
 
 		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".claw-cli")
 	}
 
-	viper.SetEnvPrefix("CLAW_CLI")
+	viper.SetEnvPrefix("CLAW")
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
@@ -74,5 +74,4 @@ func initConfig() {
 			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 		}
 	}
-
 }

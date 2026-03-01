@@ -58,6 +58,7 @@ func runReview(cmd *cobra.Command, args []string) {
 	)
 
 	client := ai.NewClient(cfg.APIKey, cfg.Model)
+	client.SetOptions(cfg.MaxTokens, cfg.Temperature)
 
 	messages := []types.Message{
 		{

@@ -42,9 +42,11 @@ func runChat(cmd *cobra.Command, args []string) {
 	cfg, err := config.Load()
 	if err != nil {
 		fmt.Println(errorStyle.Render("Error: " + err.Error()))
+		os.Exit(1)
 	}
 
 	client := ai.NewClient(cfg.APIKey, cfg.Model)
+	client.SetOptions(cfg.MaxTokens, cfg.Temperature)
 	messages := []types.Message{}
 
 	printWelcome()
