@@ -9,6 +9,7 @@ import (
 	"github.com/SShogun/ClawCLI/internal/ai"
 	"github.com/SShogun/ClawCLI/internal/config"
 	"github.com/SShogun/ClawCLI/internal/types"
+	"github.com/SShogun/ClawCLI/internal/utils"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/spf13/cobra"
 )
@@ -28,9 +29,11 @@ var chatCmd = &cobra.Command{
 Type your messages and get responses in real-time.
 
 Special commands:
-  exit, quit, q  - Exit the chat
-  clear           - Clear conversation history
-  history         - Show conversation history`,
+  exit, quit, q      - Exit the chat
+  clear              - Clear conversation history
+  history            - Show conversation history
+  explain <file>     - Explain code from a file (in-context)
+  review <file>      - Review code from a file (in-context)`,
 	Run: runChat,
 }
 
@@ -79,10 +82,102 @@ func runChat(cmd *cobra.Command, args []string) {
 					fmt.Println(infoStyle.Render(fmt.Sprintf("%s: %s", msg.Role, msg.Content)))
 				}
 			}
+			continue
 		case "":
 			continue
 		}
 
+		// Check for special commands: explain and review
+		lowerInput := strings.ToLower(input)
+		if strings.HasPrefix(lowerInput, "explain ") {
+			filePath := strings.TrimPrefix(input, "explain ")
+			filePath = strings.TrimPrefix(filePath, "Explain ")
+			filePath = strings.TrimSpace(filePath)
+
+			content, err := utils.ReadFile(filePath)
+			if err != nil {
+				fmt.Println(errorStyle.Render("Error reading file: " + err.Error()))
+				continue
+			}
+
+			prompt := fmt.Sprintf(
+				"Please explain the following code in detail. "+
+					"Break down what each part does and the overall purpose.\n\n"+
+					"File: %s\n```\n%s\n```",
+				filePath,
+				content,
+			)
+
+			fmt.Println(infoStyle.Render("Analyzing " + filePath + "..."))
+
+			messages = append(messages, types.Message{
+				Role:    "user",
+				Content: prompt,
+			})
+
+			fmt.Print(assistantStyle.Render("Assistant: "))
+			response, err := client.SendMessage(messages)
+			if err != nil {
+				fmt.Println(errorStyle.Render("Error: " + err.Error()))
+				continue
+			}
+			fmt.Println(response)
+			fmt.Println(dividerStyle.Render(strings.Repeat("─", 50)))
+
+			messages = append(messages, types.Message{
+				Role:    "assistant",
+				Content: response,
+			})
+			continue
+		}
+
+		if strings.HasPrefix(lowerInput, "review ") {
+			filePath := strings.TrimPrefix(input, "review ")
+			filePath = strings.TrimPrefix(filePath, "Review ")
+			filePath = strings.TrimSpace(filePath)
+
+			content, err := utils.ReadFile(filePath)
+			if err != nil {
+				fmt.Println(errorStyle.Render("Error reading file: " + err.Error()))
+				continue
+			}
+
+			prompt := fmt.Sprintf(
+				"Please review the following code. Provide:\n"+
+					"1. A brief summary of what the code does\n"+
+					"2. Potential bugs or issues\n"+
+					"3. Performance improvements\n"+
+					"4. Code style and best practice suggestions\n"+
+					"5. Security concerns (if any)\n\n"+
+					"File: %s\n```\n%s\n```",
+				filePath,
+				content,
+			)
+
+			fmt.Println(infoStyle.Render("Reviewing " + filePath + "..."))
+
+			messages = append(messages, types.Message{
+				Role:    "user",
+				Content: prompt,
+			})
+
+			fmt.Print(assistantStyle.Render("Assistant: "))
+			response, err := client.SendMessage(messages)
+			if err != nil {
+				fmt.Println(errorStyle.Render("Error: " + err.Error()))
+				continue
+			}
+			fmt.Println(response)
+			fmt.Println(dividerStyle.Render(strings.Repeat("─", 50)))
+
+			messages = append(messages, types.Message{
+				Role:    "assistant",
+				Content: response,
+			})
+			continue
+		}
+
+		// Regular chat message
 		messages = append(messages, types.Message{
 			Role:    "user",
 			Content: input,
@@ -113,7 +208,12 @@ func printWelcome() {
 	welcome := border.Render(
 		"🤖 CLAW CLI Assistant\n\n" +
 			"Type your message to chat with the AI.\n" +
-			"Commands: exit | clear | history",
+			"Special Commands:\n" +
+			"  exit | quit        - Exit the chat\n" +
+			"  clear              - Clear conversation history\n" +
+			"  history            - Show conversation history\n" +
+			"  explain <file>     - Explain code from a file\n" +
+			"  review <file>      - Review code from a file",
 	)
 
 	fmt.Println(welcome)
