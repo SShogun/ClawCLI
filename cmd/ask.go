@@ -38,8 +38,7 @@ func runAsk(cmd *cobra.Command, args []string) {
 
 	question := strings.Join(args, " ")
 
-	client := ai.NewClient(cfg.APIKey, cfg.Model)
-	client.SetOptions(cfg.MaxTokens, cfg.Temperature)
+	client := ai.NewClient(cfg)
 
 	messages := []types.Message{
 		{

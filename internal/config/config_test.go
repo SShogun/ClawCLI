@@ -12,12 +12,11 @@ func TestIsValidModel(t *testing.T) {
 		model    string
 		expected bool
 	}{
-		{"claude-haiku-4-5-20251001", true},
+		{"qwen2.5-coder", true},
+		{"codellama:7b", true},
+		{"llama3.1:8b", true},
 		{"claude-3-5-haiku-20241022", true},
-		{"claude-3-5-sonnet-20241022", true},
-		{"claude-3-opus-20250219", true},
-		{"invalid-model", false},
-		{"", false},
+		{"custom-model-name", true}, // Ollama accepts any model
 	}
 
 	for _, tt := range tests {
@@ -30,10 +29,37 @@ func TestIsValidModel(t *testing.T) {
 	}
 }
 
+func TestIsValidProvider(t *testing.T) {
+	tests := []struct {
+		provider string
+		expected bool
+	}{
+		{"ollama", true},
+		{"anthropic", true},
+		{"invalid", false},
+		{"", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.provider, func(t *testing.T) {
+			result := IsValidProvider(tt.provider)
+			if result != tt.expected {
+				t.Errorf("IsValidProvider(%q) = %v, want %v", tt.provider, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 
 	// Check required keys exist
+	if _, ok := cfg["provider"]; !ok {
+		t.Error("DefaultConfig missing 'provider' key")
+	}
+	if _, ok := cfg["base-url"]; !ok {
+		t.Error("DefaultConfig missing 'base-url' key")
+	}
 	if _, ok := cfg["model"]; !ok {
 		t.Error("DefaultConfig missing 'model' key")
 	}
@@ -48,6 +74,10 @@ func TestDefaultConfig(t *testing.T) {
 	}
 
 	// Check default values
+	if provider, ok := cfg["provider"].(string); !ok || provider != DefaultProvider {
+		t.Errorf("DefaultConfig provider = %v, want %s", provider, DefaultProvider)
+	}
+
 	if model, ok := cfg["model"].(string); !ok || model != DefaultModel {
 		t.Errorf("DefaultConfig model = %v, want %s", model, DefaultModel)
 	}
@@ -70,11 +100,12 @@ func TestValidate(t *testing.T) {
 
 	tests := []testCase{
 		{
-			name: "valid config",
+			name: "valid ollama config",
 			config: func() *types.Config {
 				return &types.Config{
-					APIKey:      "sk-ant-valid-key",
-					Model:       "claude-haiku-4-5-20251001",
+					Provider:    "ollama",
+					BaseURL:     "http://localhost:11434",
+					Model:       "qwen2.5-coder",
 					Temperature: 0.7,
 					MaxTokens:   4096,
 				}
@@ -82,11 +113,51 @@ func TestValidate(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "missing API key",
+			name: "valid anthropic config",
 			config: func() *types.Config {
 				return &types.Config{
+					Provider:    "anthropic",
+					APIKey:      "sk-ant-valid-key",
+					Model:       "claude-3-5-haiku-20241022",
+					Temperature: 0.7,
+					MaxTokens:   4096,
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "anthropic missing API key",
+			config: func() *types.Config {
+				return &types.Config{
+					Provider:    "anthropic",
 					APIKey:      "",
-					Model:       "claude-haiku-4-5-20251001",
+					Model:       "claude-3-5-haiku-20241022",
+					Temperature: 0.7,
+					MaxTokens:   4096,
+				}
+			},
+			wantErr: true,
+		},
+		{
+			name: "ollama without API key (should be valid)",
+			config: func() *types.Config {
+				return &types.Config{
+					Provider:    "ollama",
+					BaseURL:     "http://localhost:11434",
+					APIKey:      "",
+					Model:       "qwen2.5-coder",
+					Temperature: 0.7,
+					MaxTokens:   4096,
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid provider",
+			config: func() *types.Config {
+				return &types.Config{
+					Provider:    "openai",
+					Model:       "gpt-4",
 					Temperature: 0.7,
 					MaxTokens:   4096,
 				}
@@ -97,8 +168,8 @@ func TestValidate(t *testing.T) {
 			name: "invalid temperature too high",
 			config: func() *types.Config {
 				return &types.Config{
-					APIKey:      "sk-ant-valid-key",
-					Model:       "claude-haiku-4-5-20251001",
+					Provider:    "ollama",
+					Model:       "qwen2.5-coder",
 					Temperature: 1.5,
 					MaxTokens:   4096,
 				}
@@ -109,8 +180,8 @@ func TestValidate(t *testing.T) {
 			name: "invalid temperature too low",
 			config: func() *types.Config {
 				return &types.Config{
-					APIKey:      "sk-ant-valid-key",
-					Model:       "claude-haiku-4-5-20251001",
+					Provider:    "ollama",
+					Model:       "qwen2.5-coder",
 					Temperature: -0.5,
 					MaxTokens:   4096,
 				}
@@ -121,22 +192,10 @@ func TestValidate(t *testing.T) {
 			name: "invalid max tokens",
 			config: func() *types.Config {
 				return &types.Config{
-					APIKey:      "sk-ant-valid-key",
-					Model:       "claude-haiku-4-5-20251001",
+					Provider:    "ollama",
+					Model:       "qwen2.5-coder",
 					Temperature: 0.7,
 					MaxTokens:   -1,
-				}
-			},
-			wantErr: true,
-		},
-		{
-			name: "invalid model",
-			config: func() *types.Config {
-				return &types.Config{
-					APIKey:      "sk-ant-valid-key",
-					Model:       "invalid-model",
-					Temperature: 0.7,
-					MaxTokens:   4096,
 				}
 			},
 			wantErr: true,
@@ -169,16 +228,23 @@ func TestInit(t *testing.T) {
 }
 
 func TestLoadWithoutAPIKey(t *testing.T) {
-	// Clear the environment variable if it exists
+	// Clear the environment variables
 	os.Unsetenv("CLAW_API_KEY")
+	os.Setenv("CLAW_PROVIDER", "ollama")
+	defer os.Unsetenv("CLAW_PROVIDER")
 
 	err := Init()
 	if err != nil {
 		t.Fatalf("Init() failed: %v", err)
 	}
 
-	_, err = Load()
-	if err == nil {
-		t.Error("Load() should return error when API key is missing")
+	// Ollama should load fine without API key
+	cfg, err := Load()
+	if err != nil {
+		t.Errorf("Load() should not return error for ollama without API key: %v", err)
+	}
+
+	if cfg != nil && cfg.Provider != "ollama" {
+		t.Errorf("Load() provider = %v, want ollama", cfg.Provider)
 	}
 }

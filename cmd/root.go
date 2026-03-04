@@ -9,18 +9,21 @@ import (
 )
 
 var (
-	cfgFile string
-	apiKey  string
-	verbose bool
-	model   string
+	cfgFile  string
+	apiKey   string
+	verbose  bool
+	model    string
+	provider string
+	baseURL  string
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "clawcli",
 	Short: "An AI-Powered CLI Assistant",
 	Long: `CLAW CLI is a command-line tool that provides
-AI-powered code assistance, explanations, and chat capabilities
-powered by Claude AI.
+AI-powered code assistance, explanations, and chat capabilities.
+
+Supports both local Ollama models and Anthropic Claude API.
 
 Usage examples:
   clawcli chat                    Start interactive chat
@@ -41,10 +44,14 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.claw-cli.yaml)")
-	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "Claude API key (can also be set via .env or CLAW_API_KEY)")
+	rootCmd.PersistentFlags().StringVar(&provider, "provider", "", "AI provider: ollama or anthropic (default: ollama)")
+	rootCmd.PersistentFlags().StringVar(&baseURL, "base-url", "", "API base URL (default: http://localhost:11434)")
+	rootCmd.PersistentFlags().StringVar(&apiKey, "api-key", "", "API key (required for anthropic, not needed for ollama)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable verbose output")
-	rootCmd.PersistentFlags().StringVar(&model, "model", "", "Claude model to use")
+	rootCmd.PersistentFlags().StringVar(&model, "model", "", "model to use (e.g. qwen2.5-coder, llama3.1:8b)")
 
+	viper.BindPFlag("provider", rootCmd.PersistentFlags().Lookup("provider"))
+	viper.BindPFlag("base-url", rootCmd.PersistentFlags().Lookup("base-url"))
 	viper.BindPFlag("api-key", rootCmd.PersistentFlags().Lookup("api-key"))
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	viper.BindPFlag("model", rootCmd.PersistentFlags().Lookup("model"))

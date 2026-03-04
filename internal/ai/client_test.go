@@ -6,22 +6,27 @@ import (
 	"github.com/SShogun/ClawCLI/internal/types"
 )
 
-func TestNewClient(t *testing.T) {
-	apiKey := "test-api-key"
-	model := "claude-3-5-haiku-20241022"
-
-	client := NewClient(apiKey, model)
-
-	if client.APIKey != apiKey {
-		t.Errorf("NewClient() APIKey = %v, want %v", client.APIKey, apiKey)
+func TestNewClientOllama(t *testing.T) {
+	cfg := &types.Config{
+		Provider:    "ollama",
+		BaseURL:     "http://localhost:11434",
+		Model:       "qwen2.5-coder",
+		MaxTokens:   4096,
+		Temperature: 0.7,
 	}
 
-	if client.Model != model {
-		t.Errorf("NewClient() Model = %v, want %v", client.Model, model)
+	client := NewClient(cfg)
+
+	if client.Provider != "ollama" {
+		t.Errorf("NewClient() Provider = %v, want ollama", client.Provider)
 	}
 
-	if client.BaseURL != ClaudeAPIURL {
-		t.Errorf("NewClient() BaseURL = %v, want %v", client.BaseURL, ClaudeAPIURL)
+	if client.Model != "qwen2.5-coder" {
+		t.Errorf("NewClient() Model = %v, want qwen2.5-coder", client.Model)
+	}
+
+	if client.BaseURL != "http://localhost:11434" {
+		t.Errorf("NewClient() BaseURL = %v, want http://localhost:11434", client.BaseURL)
 	}
 
 	if client.MaxTokens != 4096 {
@@ -34,6 +39,30 @@ func TestNewClient(t *testing.T) {
 
 	if client.HTTPClient == nil {
 		t.Error("NewClient() HTTPClient is nil, want non-nil")
+	}
+}
+
+func TestNewClientAnthropic(t *testing.T) {
+	cfg := &types.Config{
+		Provider:    "anthropic",
+		APIKey:      "sk-ant-test-key",
+		Model:       "claude-3-5-haiku-20241022",
+		MaxTokens:   4096,
+		Temperature: 0.7,
+	}
+
+	client := NewClient(cfg)
+
+	if client.Provider != "anthropic" {
+		t.Errorf("NewClient() Provider = %v, want anthropic", client.Provider)
+	}
+
+	if client.BaseURL != ClaudeAPIURL {
+		t.Errorf("NewClient() BaseURL = %v, want %v", client.BaseURL, ClaudeAPIURL)
+	}
+
+	if client.APIKey != "sk-ant-test-key" {
+		t.Errorf("NewClient() APIKey = %v, want sk-ant-test-key", client.APIKey)
 	}
 }
 
@@ -83,7 +112,14 @@ func TestSetOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client := NewClient("test-key", "claude-3-5-haiku-20241022")
+			cfg := &types.Config{
+				Provider:    "ollama",
+				BaseURL:     "http://localhost:11434",
+				Model:       "qwen2.5-coder",
+				MaxTokens:   4096,
+				Temperature: 0.7,
+			}
+			client := NewClient(cfg)
 			client.SetOptions(tt.args.maxTokens, tt.args.temperature)
 
 			if client.MaxTokens != tt.expectTokens {
@@ -97,7 +133,7 @@ func TestSetOptions(t *testing.T) {
 	}
 }
 
-func TestChatRequestMarshaling(t *testing.T) {
+func TestOllamaRequestMarshaling(t *testing.T) {
 	messages := []types.Message{
 		{
 			Role:    "user",
@@ -105,29 +141,50 @@ func TestChatRequestMarshaling(t *testing.T) {
 		},
 	}
 
-	request := types.ChatRequest{
-		Model:       "claude-3-5-haiku-20241022",
-		Messages:    messages,
-		MaxTokens:   2048,
-		Temperature: 0.7,
-		Stream:      false,
+	request := types.OllamaChatRequest{
+		Model:    "qwen2.5-coder",
+		Messages: messages,
+		Stream:   false,
+		Options: types.OllamaOptions{
+			Temperature: 0.7,
+			NumPredict:  4096,
+		},
 	}
 
-	// This test just verifies the struct can be created and has valid fields
-	if request.Model != "claude-3-5-haiku-20241022" {
-		t.Error("ChatRequest Model mismatch")
+	if request.Model != "qwen2.5-coder" {
+		t.Error("OllamaChatRequest Model mismatch")
 	}
 
 	if len(request.Messages) != 1 {
-		t.Errorf("ChatRequest Messages length = %d, want 1", len(request.Messages))
+		t.Errorf("OllamaChatRequest Messages length = %d, want 1", len(request.Messages))
 	}
 
-	if request.Messages[0].Role != "user" {
-		t.Errorf("Message Role = %s, want user", request.Messages[0].Role)
+	if request.Stream != false {
+		t.Error("OllamaChatRequest Stream should be false")
 	}
 
-	if request.Messages[0].Content != "Hello" {
-		t.Errorf("Message Content = %s, want Hello", request.Messages[0].Content)
+	if request.Options.Temperature != 0.7 {
+		t.Errorf("OllamaChatRequest Temperature = %v, want 0.7", request.Options.Temperature)
+	}
+
+	if request.Options.NumPredict != 4096 {
+		t.Errorf("OllamaChatRequest NumPredict = %v, want 4096", request.Options.NumPredict)
+	}
+}
+
+func TestSendMessageUnsupportedProvider(t *testing.T) {
+	cfg := &types.Config{
+		Provider:    "invalid",
+		BaseURL:     "http://localhost:11434",
+		Model:       "test",
+		MaxTokens:   4096,
+		Temperature: 0.7,
+	}
+	client := NewClient(cfg)
+
+	_, err := client.SendMessage([]types.Message{{Role: "user", Content: "test"}})
+	if err == nil {
+		t.Error("SendMessage() should return error for unsupported provider")
 	}
 }
 

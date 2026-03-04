@@ -14,10 +14,12 @@ import (
 const (
 	ClaudeAPIURL     = "https://api.anthropic.com/v1/messages"
 	AnthropicVersion = "2023-06-01"
+	OllamaChatPath   = "/api/chat"
 )
 
-// Client handles communication with the Claude API
+// Client handles communication with the AI provider
 type Client struct {
+	Provider    string
 	APIKey      string
 	BaseURL     string
 	Model       string
@@ -26,17 +28,23 @@ type Client struct {
 	Temperature float64
 }
 
-// NewClient creates a new AI client
-func NewClient(apiKey, model string) *Client {
+// NewClient creates a new AI client from config
+func NewClient(cfg *types.Config) *Client {
+	baseURL := cfg.BaseURL
+	if cfg.Provider == "anthropic" {
+		baseURL = ClaudeAPIURL
+	}
+
 	return &Client{
-		APIKey:  apiKey,
-		BaseURL: ClaudeAPIURL,
-		Model:   model,
+		Provider: cfg.Provider,
+		APIKey:   cfg.APIKey,
+		BaseURL:  baseURL,
+		Model:    cfg.Model,
 		HTTPClient: &http.Client{
 			Timeout: 120 * time.Second,
 		},
-		MaxTokens:   4096,
-		Temperature: 0.7,
+		MaxTokens:   cfg.MaxTokens,
+		Temperature: cfg.Temperature,
 	}
 }
 
@@ -50,8 +58,83 @@ func (c *Client) SetOptions(maxTokens int, temperature float64) {
 	}
 }
 
-// SendMessage sends a message to Claude and returns the response
+// SendMessage sends a message and returns the response (routes to correct provider)
 func (c *Client) SendMessage(messages []types.Message) (string, error) {
+	switch c.Provider {
+	case "ollama":
+		return c.sendOllamaMessage(messages)
+	case "anthropic":
+		return c.sendAnthropicMessage(messages)
+	default:
+		return "", fmt.Errorf("unsupported provider: %s", c.Provider)
+	}
+}
+
+// sendOllamaMessage sends a message to a local Ollama instance
+func (c *Client) sendOllamaMessage(messages []types.Message) (string, error) {
+	// Build Ollama request
+	reqBody := types.OllamaChatRequest{
+		Model:    c.Model,
+		Messages: messages,
+		Stream:   false,
+		Options: types.OllamaOptions{
+			Temperature: c.Temperature,
+			NumPredict:  c.MaxTokens,
+		},
+	}
+
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("error marshaling request: %w", err)
+	}
+
+	// Build URL: baseURL + /api/chat
+	url := c.BaseURL + OllamaChatPath
+
+	// Create HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("error creating request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send request
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("error connecting to Ollama at %s: %w\nMake sure Ollama is running (ollama serve)", c.BaseURL, err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading response: %w", err)
+	}
+
+	// Handle errors
+	if resp.StatusCode != http.StatusOK {
+		var errResp types.OllamaErrorResponse
+		if err := json.Unmarshal(body, &errResp); err != nil {
+			return "", fmt.Errorf("Ollama error (status %d): %s", resp.StatusCode, string(body))
+		}
+		return "", fmt.Errorf("Ollama error: %s", errResp.Error)
+	}
+
+	// Parse response
+	var chatResp types.OllamaChatResponse
+	if err := json.Unmarshal(body, &chatResp); err != nil {
+		return "", fmt.Errorf("error parsing Ollama response: %w", err)
+	}
+
+	if chatResp.Message.Content == "" {
+		return "", fmt.Errorf("empty response from Ollama")
+	}
+
+	return chatResp.Message.Content, nil
+}
+
+// sendAnthropicMessage sends a message to the Anthropic Claude API
+func (c *Client) sendAnthropicMessage(messages []types.Message) (string, error) {
 	// Build request
 	reqBody := types.ChatRequest{
 		Model:       c.Model,
@@ -113,8 +196,8 @@ func (c *Client) SendMessage(messages []types.Message) (string, error) {
 	return chatResp.Content[0].Text, nil
 }
 
-// ValidateAPIKey checks if the API key is valid by making a test request
-func (c *Client) ValidateAPIKey() error {
+// ValidateConnection checks if the provider is reachable
+func (c *Client) ValidateConnection() error {
 	testMessages := []types.Message{
 		{
 			Role:    "user",

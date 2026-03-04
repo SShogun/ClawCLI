@@ -12,7 +12,9 @@ import (
 
 // Default configuration values
 const (
-	DefaultModel       = "claude-haiku-4-5-20251001"
+	DefaultProvider    = "ollama"
+	DefaultBaseURL     = "http://localhost:11434"
+	DefaultModel       = "qwen2.5-coder"
 	DefaultTemperature = 0.7
 	DefaultMaxTokens   = 4096
 )
@@ -36,6 +38,8 @@ func Init() error {
 // Load reads configuration from viper and returns a Config struct
 func Load() (*types.Config, error) {
 	cfg := &types.Config{
+		Provider:    viper.GetString("PROVIDER"),
+		BaseURL:     viper.GetString("BASE_URL"),
 		APIKey:      viper.GetString("API_KEY"),
 		Model:       viper.GetString("MODEL"),
 		Temperature: viper.GetFloat64("TEMPERATURE"),
@@ -44,6 +48,14 @@ func Load() (*types.Config, error) {
 	}
 
 	// Apply defaults if not set
+	if cfg.Provider == "" {
+		cfg.Provider = DefaultProvider
+	}
+
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = DefaultBaseURL
+	}
+
 	if cfg.Model == "" {
 		cfg.Model = DefaultModel
 	}
@@ -56,10 +68,10 @@ func Load() (*types.Config, error) {
 		cfg.MaxTokens = DefaultMaxTokens
 	}
 
-	// Validate API key
-	if cfg.APIKey == "" {
+	// Only require API key for anthropic provider
+	if cfg.Provider == "anthropic" && cfg.APIKey == "" {
 		return nil, fmt.Errorf(
-			"API key not set. Please set ANTHROPIC_API_KEY in .env file or as environment variable",
+			"API key not set. Please set CLAW_API_KEY in .env file or as environment variable",
 		)
 	}
 
@@ -109,8 +121,13 @@ func GetConfigPath() (string, error) {
 
 // Validate checks if the configuration is valid
 func Validate(cfg *types.Config) error {
-	if cfg.APIKey == "" {
-		return fmt.Errorf("API key is required")
+	// Only require API key for anthropic
+	if cfg.Provider == "anthropic" && cfg.APIKey == "" {
+		return fmt.Errorf("API key is required for anthropic provider")
+	}
+
+	if cfg.Provider != "ollama" && cfg.Provider != "anthropic" {
+		return fmt.Errorf("invalid provider: %s (must be 'ollama' or 'anthropic')", cfg.Provider)
 	}
 
 	if cfg.Temperature < 0 || cfg.Temperature > 1 {
@@ -119,10 +136,6 @@ func Validate(cfg *types.Config) error {
 
 	if cfg.MaxTokens < 1 || cfg.MaxTokens > 100000 {
 		return fmt.Errorf("max-tokens must be between 1 and 100000")
-	}
-
-	if !IsValidModel(cfg.Model) {
-		return fmt.Errorf("invalid model: %s", cfg.Model)
 	}
 
 	return nil

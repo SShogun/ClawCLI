@@ -53,8 +53,7 @@ func runExplain(cmd *cobra.Command, args []string) {
 		content,
 	)
 
-	client := ai.NewClient(cfg.APIKey, cfg.Model)
-	client.SetOptions(cfg.MaxTokens, cfg.Temperature)
+	client := ai.NewClient(cfg)
 
 	messages := []types.Message{
 		{

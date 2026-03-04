@@ -45,8 +45,7 @@ func runChat(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	client := ai.NewClient(cfg.APIKey, cfg.Model)
-	client.SetOptions(cfg.MaxTokens, cfg.Temperature)
+	client := ai.NewClient(cfg)
 	messages := []types.Message{}
 
 	printWelcome()
