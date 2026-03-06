@@ -1,92 +1,93 @@
-# 🤖 ClawCLI – AI-Powered Development Assistant
+# ClawCLI – AI-Powered Development Assistant
 
-> **Multiply your development productivity** – Ask AI, review code, and get instant explanations—all from your terminal. Built with Go for speed, powered by Claude AI for intelligence.
+> **Multiply your development productivity** – Ask AI, review code, and get instant explanations—all from your terminal. Built with Go for speed, powered by **Ollama (100% free & local)** or cloud AI for intelligence.
 
 [![Go Version](https://img.shields.io/badge/Go-1.21+-blue?logo=go&logoColor=white)](https://golang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Claude AI](https://img.shields.io/badge/Powered%20by-Claude%20AI-9C27B0?logo=anthropic)](https://www.anthropic.com)
+[![Ollama](https://img.shields.io/badge/Powered%20by-Ollama-000000?logo=ollama)](https://ollama.com/)
 [![Build Status](https://img.shields.io/badge/Status-Production%20Ready-success)]()
 
 ---
 
-## 💡 Why ClawCLI?
+## Why ClawCLI?
 
-Developers spend **25% of their time** context-switching between IDE and documentation. ClawCLI **eliminates that friction** by bringing Claude AI into your workflow.
+Developers spend **25% of their time** context-switching between IDE and documentation. ClawCLI **eliminates that friction** by bringing AI directly into your workflow—**100% free and local** with Ollama.
 
 **Real-world impact:**
-- ⚡ Get code explanations in seconds, not minutes
-- 🔍 Automated code reviews catch issues before production  
-- 💬 Interactive problem-solving without leaving your terminal
-- 🎯 Better code quality with instant feedback loops
+- **Completely free** – runs locally with Ollama, no API costs
+- **Privacy-first** – your code never leaves your machine
+- Get code explanations in seconds, not minutes
+- Automated code reviews catch issues before production  
+- Interactive problem-solving without leaving your terminal
+- Better code quality with instant feedback loops
 
 ---
 
-## ✨ Core Features
+## Core Features
 
 | Feature | Capability | Use Case |
 |---------|-----------|----------|
-| 💬 **Interactive Chat** | Multi-turn conversations with context retention | Brainstorming, debugging, architecture discussions |
-| ❓ **Ask Command** | Lightning-fast one-shot answers | Quick clarifications, syntax help |
-| 📖 **Code Explanation** | Understand complex code instantly | Onboarding, legacy code review, learning |
-| 🔍 **Smart Code Review** | AI-powered analysis (bugs, performance, security) | Pre-commit checks, PR preparation |
-| ⚙️ **Flexible Config** | Choose model, temperature, token limits | Cost optimization vs. quality tradeoff |
-| 🎨 **Beautiful TUI** | Production-grade terminal UI | Professional, accessible output |
+| **Interactive Chat** | Multi-turn conversations with context retention | Brainstorming, debugging, architecture discussions |
+| **Ask Command** | Lightning-fast one-shot answers | Quick clarifications, syntax help |
+| **Code Explanation** | Understand complex code instantly | Onboarding, legacy code review, learning |
+| **Smart Code Review** | AI-powered analysis (bugs, performance, security) | Pre-commit checks, PR preparation |
+| **Flexible Config** | Choose model, temperature, token limits | Cost optimization vs. quality tradeoff |
+| **Beautiful TUI** | Production-grade terminal UI | Professional, accessible output |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Requirements
 - **Go 1.21+** – [Install here](https://golang.org/doc/install)
-- **Anthropic API Key** – [Get free credits](https://www.anthropic.com) (free tier includes credits)
+- **Ollama** – [Install here](https://ollama.com/) (free, runs locally)
 - **5 minutes** to set up
 
 ### Installation
 
 ```bash
-# 1. Clone the repository
+# 1. Install Ollama and pull a model
+ollama pull qwen2.5-coder
+
+# 2. Clone the repository
 git clone https://github.com/SShogun/ClawCLI.git
 cd ClawCLI
 
-# 2. Create environment file
+# 3. Create environment file (defaults work out of the box!)
 cp .env.example .env
 
-# 3. Add your API key to .env
-nano .env  # or your preferred editor
-# CLAW_API_KEY=sk-ant-xxxxx
-
 # 4. Build & run
-make build
-./clawcli chat
+go build -o clawcli.exe
+.\clawcli.exe chat
 ```
 
-**Done!** You're now talking to Claude AI from your terminal.
+**Done!** You're now talking to AI from your terminal—completely free and private.
 
 ---
 
-## 📖 Usage Examples
+## Usage Examples
 
-### 🎯 Ask a Quick Question
+### Ask a Quick Question
 ```bash
-clawcli ask "How do I handle errors in Go?"
-clawcli ask "Write a regex for validating emails"
+.\clawcli.exe ask "How do I handle errors in Go?"
+.\clawcli.exe ask "Write a regex for validating emails"
 ```
 
-### 💬 Start Interactive Chat
+### Start Interactive Chat
 ```bash
-clawcli chat
+.\clawcli.exe chat
 > What's the best way to structure a REST API?
 > How do I optimize database queries?
 > exit
 ```
 
-### 📚 Explain Existing Code
+### Explain Existing Code
 ```bash
-clawcli explain main.go
-clawcli explain internal/ai/client.go
+.\clawcli.exe explain main.go
+.\clawcli.exe explain internal\ai\client.go
 ```
 
-### 🔍 Get Code Review Suggestions
+### Get Code Review Suggestions
 ```bash
-clawcli review service.go
+.\clawcli.exe review service.go
 # Get:
 # • Bug detection
 # • Performance suggestions
@@ -94,38 +95,54 @@ clawcli review service.go
 # • Best practices
 ```
 
+**Tip:** Add ClawCLI to your PATH to use `clawcli` instead of `.\clawcli.exe`
+
 ---
 
-## ⚙️ Configuration & Customization
+## Configuration & Customization
 
 Create a `.env` file in your project directory:
 
 ```dotenv
-# Required
-CLAW_API_KEY=sk-ant-your_key_here
+# Default: Ollama (local, free)
+CLAW_PROVIDER=ollama
+CLAW_BASE_URL=http://localhost:11434
+CLAW_MODEL=qwen2.5-coder
 
-# Optional (with defaults)
-CLAW_MODEL=claude-haiku-4-5-20251001
+# Optional settings
 CLAW_MAX_TOKENS=4096
 CLAW_TEMPERATURE=0.7
+
+# For cloud providers (optional, paid)
+# CLAW_PROVIDER=anthropic
+# CLAW_API_KEY=sk-ant-your_key_here
+# CLAW_MODEL=claude-3-5-sonnet-20241022
 ```
 
 ### Model Selection Guide
 
-| Model | Speed | Cost | Best For |
-|-------|-------|------|----------|
-| **Haiku 4.5** | ⚡⚡⚡ | $ | Daily coding tasks, learning |
-| **Sonnet 3.5** | ⚡⚡ | $$ | Complex code reviews, architecture |
-| **Opus 3** | ⚡ | $$$ | Expert analysis, detailed explanations |
+#### Ollama Models (Free, Local)
+| Model | Size | Speed | Best For |
+|-------|------|-------|----------|
+| **qwen2.5-coder** | 7B | Fast | Coding tasks (recommended) |
+| **codellama** | 7B | Fast | Code generation |
+| **deepseek-coder** | 6.7B | Fast | Code analysis |
+| **llama3.1** | 8B | Medium | General purpose |
 
-[Compare all models →](https://docs.anthropic.com/en/docs/about-claude/models/latest)
+Install with: `ollama pull <model-name>`
+
+#### Cloud Models (Paid)
+| Provider | Model | Cost | Best For |
+|----------|-------|------|----------|
+| Anthropic | claude-3-5-sonnet | $$ | Complex reasoning |
+| Anthropic | claude-3-opus | $$$ | Expert analysis |
 ### Review Code
 
 Get an AI code review with suggestions:
 
 ```bash
-./clawcli review main.go
-./clawcli review src/service.go
+.\clawcli.exe review main.go
+.\clawcli.exe review src\service.go
 ```
 
 The review will cover:
@@ -140,12 +157,12 @@ The review will cover:
 Check installed version and build info:
 
 ```bash
-./clawcli version
+.\clawcli.exe version
 ```
 
 ---
 
-## 🏗️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 **Why Go?** – Fast, compiled, single binary deployment. Perfect for CLI tools.
 
@@ -154,7 +171,9 @@ ClawCLI (entrypoint)
 ├── Cobra (CLI framework)
 ├── Lipgloss (terminal styling) 
 ├── Viper (configuration)
-└── Claude API (AI backbone)
+└── AI Providers:
+    ├── Ollama (local, default)
+    └── Anthropic (cloud, optional)
 ```
 
 ### Project Structure
@@ -177,7 +196,7 @@ ClawCLI/
 
 ---
 
-## 🧪 Development
+## Development
 
 ### Local Setup
 
@@ -204,14 +223,14 @@ go test -coverprofile=coverage.out ./...
 go tool cover -html=coverage.out
 ```
 
-## 🤝 Contributing & Collaboration
+## Contributing & Collaboration
 
 We believe in **learning by building**. This is an excellent project for developers who want to:
 
-✅ **Learn Go** with a real production codebase  
-✅ **Understand CLI design** (argument parsing, user experience)  
-✅ **Work with APIs** (HTTP clients, error handling)  
-✅ **Master terminal UI** (formatting, styling, interactivity)  
+- **Learn Go** with a real production codebase  
+- **Understand CLI design** (argument parsing, user experience)  
+- **Work with APIs** (HTTP clients, error handling)  
+- **Master terminal UI** (formatting, styling, interactivity)  
 
 ### Getting Started with Contributions
 
@@ -236,24 +255,28 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-## 📊 Business Value & ROI
+## Business Value & ROI
 
 **For Engineering Teams:**
 | Metric | Impact |
 |--------|--------|
+| Cost | $0 - runs locally, no API fees |
+| Privacy | 100% - code never leaves your network |
 | Dev Productivity | +25-40% faster code reviews |
 | Onboarding Time | -50% time to understand legacy code |
 | Bug Prevention | ~15% reduction with AI-powered reviews |
 | Context Switching | -30% time in docs/searches |
 
 **For Startups & Scale-ups:**
+- **Zero recurring costs** - no API subscriptions
+- **Enterprise-ready security** - on-premise deployment
 - Reduce code review bottlenecks without hiring more seniors
 - Accelerate new dev onboarding
 - Standardize code quality across distributed teams
 
 ---
 
-## 🚀 Roadmap & Vision
+## Roadmap & Vision
 
 ### Q2 2026
 - [ ] VSCode Extension for inline explanations
@@ -269,53 +292,57 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ---
 
-## 🆘 Support & Troubleshooting
+## Support & Troubleshooting
 
 ### Common Issues
 
+**Q: "clawcli is not recognized"?**  
+A: Use `.\clawcli.exe` or add it to your PATH
+
 **Q: "file not found" error?**  
-A: Use relative path from project root: `clawcli explain ./cmd/chat.go`
+A: Use relative path from current directory: `.\clawcli.exe explain .\cmd\chat.go`
 
-**Q: API errors or rate limits?**  
-A: Check [pricing](https://www.anthropic.com/pricing) and [rate limits](https://docs.anthropic.com/en/docs/guides/rate-limits)
+**Q: "connection refused" error?**  
+A: Make sure Ollama is running: `ollama serve`
 
-**Q: Can I self-host?**  
-A: ClawCLI works with any Claude API endpoint. Currently Anthropic-hosted only.
+**Q: Want to use cloud AI instead?**  
+A: Set `CLAW_PROVIDER=anthropic` in `.env` and add your API key
 
 ### Get Help
 
-📖 **Docs:** [Full Documentation](docs/)  
-🐛 **Bugs:** [GitHub Issues](https://github.com/SShogun/ClawCLI/issues)  
-💬 **Discussions:** [GitHub Discussions](https://github.com/SShogun/ClawCLI/discussions)  
-📧 **Email:** hello@example.com  
+**Docs:** [Full Documentation](docs/)  
+**Bugs:** [GitHub Issues](https://github.com/SShogun/ClawCLI/issues)  
+**Discussions:** [GitHub Discussions](https://github.com/SShogun/ClawCLI/discussions)  
+**Email:** hello@example.com  
 
 ---
 
-## 📜 License & Legal
+## License & Legal
 
 **MIT License** – See [LICENSE](LICENSE) file  
 
 You're free to:
-- ✅ Use commercially
-- ✅ Modify and redistribute
-- ✅ Use in private/open-source projects
+- Use commercially
+- Modify and redistribute
+- Use in private/open-source projects
 
-**No warranty.** Use at your own discretion. Costs are API-based (Anthropic Claude).
+**No warranty.** Use at your own discretion. Default setup (Ollama) is **100% free** with no API costs.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with these incredible tools:
 
 - **[Cobra](https://github.com/spf13/cobra)** – Go CLI framework (elegant & powerful)
 - **[Lipgloss](https://github.com/charmbracelet/lipgloss)** – Terminal styling (beautiful UX)
 - **[Viper](https://github.com/spf13/viper)** – Configuration management
-- **[Anthropic Claude AI](https://www.anthropic.com)** – The AI backbone
+- **[Ollama](https://ollama.com/)** – Local AI runtime (free & private)
+- **Optional:** Anthropic Claude for cloud AI
 
 ---
 
-## 👤 Creator
+## Creator
 
 **Soham** – Full-stack developer & Go enthusiast  
 [GitHub](https://github.com/SShogun) | [LinkedIn](https://linkedin.com/in/yourprofile) | [Portfolio](https://yourportfolio.com)
@@ -324,9 +351,9 @@ Built with these incredible tools:
 
 <div align="center">
 
-**Made with ❤️ for developers who love efficient tools**
+**Made for developers who love efficient tools**
 
-[Star ⭐](https://github.com/SShogun/ClawCLI) · [Fork 🍴](https://github.com/SShogun/ClawCLI/fork) · [Discuss 💬](https://github.com/SShogun/ClawCLI/discussions)
+[Star](https://github.com/SShogun/ClawCLI) · [Fork](https://github.com/SShogun/ClawCLI/fork) · [Discuss](https://github.com/SShogun/ClawCLI/discussions)
 
 </div>
 
